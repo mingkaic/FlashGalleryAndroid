@@ -1,0 +1,23 @@
+<resources>
+    <string name="app_name">FlashGallery</string>
+    <string name="action_settings">Settings</string>
+
+    <string name="take_photo">Take Photo!</string>
+    <string name="title_title">Title</string>
+    <string name="title_hint">Enter a title</string>
+
+    <string name="hello_world">Hello world!</string>
+    <string name="title_activity_image_capture">imageCaptureActivity</string>
+    <string name="photo_title_hint">Enter a title for the image</string>
+    <string name="photo_title_label">Title</string>
+    <string name="photo_details_label">Details</string>
+    <string name="description_hint">Enter a description for the image</string>
+    <string name="date_picker_title">Date taken:</string>
+
+    <string name="new_photo">New Photo</string>
+    <string name="show_subtitle">Show Subtitle</string>
+    <string name="hide_subtitle">Hide Subtitle</string>
+    <string name="subtitle_format">%1$s photos</string>
+    <string name="send_picture">Send Photo</string>
+    <string name="photo_detail_title">Image Detail</string>
+</resources>
