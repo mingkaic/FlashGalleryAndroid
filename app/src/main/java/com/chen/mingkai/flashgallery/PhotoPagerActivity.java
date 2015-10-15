@@ -14,7 +14,7 @@ import java.util.List;
 import java.util.UUID;
 
 // flips between photo
-public class PhotoPagerActivity extends AppCompatActivity {
+public class PhotoPagerActivity extends AppCompatActivity implements PhotoFragment.Callbacks {
     // data models
     private static final String EXTRA_PHOTO_ID = "com.chen.mingkai.flashgallery.photointent.photo_id";
 
@@ -58,5 +58,10 @@ public class PhotoPagerActivity extends AppCompatActivity {
         if (mPhotos.get(i).getId().equals(photoId)) {
             mViewPager.setCurrentItem(i);
         }
+    }
+
+    @Override
+    public void onPhotoUpdate(Photo photo) {
+
     }
 }

@@ -26,6 +26,11 @@ public class PhotoFragment extends Fragment{
     // data model
     private Photo mPhoto;
     private File mPhotoFile;
+    private Callbacks mCallbacks;
+
+    public interface Callbacks {
+        void onPhotoUpdate(Photo photo);
+    }
 
     private static final String ARG_PHOTO_ID = "photo_id";
     private static final String DIALOG_DATE = "DialogDate";
@@ -61,6 +66,18 @@ public class PhotoFragment extends Fragment{
     }
 
     @Override
+    public void onAttach(Activity activity) {
+        super.onAttach(activity);
+        mCallbacks = (Callbacks)activity;
+    }
+
+    @Override
+    public void onDetach() {
+        super.onDetach();
+        mCallbacks = null;
+    }
+
+    @Override
     public void onPause() {
         super.onPause();
         PhotoCenter.get(getActivity()).updatePhoto(mPhoto); // save
@@ -81,6 +98,7 @@ public class PhotoFragment extends Fragment{
             @Override
             public void onTextChanged(CharSequence s, int start, int before, int count) {
                 mPhoto.setTitle(s.toString()); // record in mPhoto object
+                updatePhoto();
             }
 
             @Override
@@ -175,10 +193,17 @@ public class PhotoFragment extends Fragment{
             if (REQUEST_DATE == requestCode) {
                 Date date = (Date) data.getSerializableExtra(DatePickerFragment.EXTRA_DATE);
                 mPhoto.setDate(date);
+                updatePhoto();
                 updateDate();
             } else if (requestCode == REQUEST_PHOTO) {
+                updatePhoto();
                 updatePhotoView();
             }
         }
+    }
+
+    private void updatePhoto() {
+        PhotoCenter.get(getActivity()).updatePhoto(mPhoto);
+        mCallbacks.onPhotoUpdate(mPhoto);
     }
 }

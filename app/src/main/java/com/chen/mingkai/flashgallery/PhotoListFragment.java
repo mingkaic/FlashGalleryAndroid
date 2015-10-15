@@ -1,6 +1,7 @@
 package com.chen.mingkai.flashgallery;
 
 import android.annotation.TargetApi;
+import android.app.Activity;
 import android.content.Intent;
 import android.os.Build;
 import android.os.Bundle;
@@ -28,15 +29,14 @@ public class PhotoListFragment extends Fragment {
     private static final String SAVED_SUBTITLE_VISIBLE = "subtitle";
     private static final int REQUEST_PHOTO = 1;
     private boolean mSubtitleVisible;
+    private Callbacks mCallbacks; // controls callback to include list to masterdetail when available
 
     // views
     private RecyclerView mPhotoRecyclerView;
     private PhotoAdapter mAdapter;
 
-    @Override
-    public void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        setHasOptionsMenu(true);
+    public interface Callbacks {
+        void onPhotoSelected(Photo photo);
     }
 
     // inner classes
@@ -66,8 +66,7 @@ public class PhotoListFragment extends Fragment {
 
         @Override
         public void onClick(View v) {
-            Intent intent = PhotoPagerActivity.newIntent(getActivity(), mPhoto.getId());
-            startActivity(intent);
+            mCallbacks.onPhotoSelected(mPhoto);
         }
     }
 
@@ -101,6 +100,24 @@ public class PhotoListFragment extends Fragment {
         }
     }
 
+    @Override
+    public void onAttach(Activity activity) {
+        super.onAttach(activity);
+        mCallbacks = (Callbacks) activity;
+    }
+
+    @Override
+    public void onDetach() {
+        super.onDetach();
+        mCallbacks = null;
+    }
+
+    @Override
+    public void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setHasOptionsMenu(true);
+    }
+
     // implemented list UI methods
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle saveInstanceState) {
@@ -130,7 +147,7 @@ public class PhotoListFragment extends Fragment {
         outState.putBoolean(SAVED_SUBTITLE_VISIBLE, mSubtitleVisible);
     }
 
-    private void updateUI() {
+    public void updateUI() {
         PhotoCenter photoCenter = PhotoCenter.get(getActivity());
 
         List<Photo> photos = photoCenter.getPhotos();
@@ -167,8 +184,8 @@ public class PhotoListFragment extends Fragment {
             case R.id.menu_item_new_photo:
                 Photo photo = new Photo();
                 PhotoCenter.get(getActivity()).addPhoto(photo);
-                Intent intent = PhotoPagerActivity.newIntent(getActivity(), photo.getId());
-                startActivity(intent);
+                updateUI();
+                mCallbacks.onPhotoSelected(photo);
                 return true;
             case R.id.menu_item_show_subtitle:
                 mSubtitleVisible = !mSubtitleVisible;
