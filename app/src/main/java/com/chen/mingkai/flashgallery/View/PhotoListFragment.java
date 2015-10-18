@@ -1,15 +1,14 @@
-package com.chen.mingkai.flashgallery;
+package com.chen.mingkai.flashgallery.View;
 
 import android.annotation.TargetApi;
 import android.app.Activity;
-import android.content.Intent;
+import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
-import android.text.Layout;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuInflater;
@@ -20,8 +19,20 @@ import android.widget.Button;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import org.w3c.dom.Text;
+import com.chen.mingkai.flashgallery.Model.Photo;
+import com.chen.mingkai.flashgallery.Model.PhotoCenter;
+import com.chen.mingkai.flashgallery.R;
 
+import org.apache.http.HttpEntity;
+import org.apache.http.HttpResponse;
+import org.apache.http.client.HttpClient;
+import org.apache.http.client.methods.HttpGet;
+import org.apache.http.impl.client.DefaultHttpClient;
+import org.apache.http.protocol.BasicHttpContext;
+import org.apache.http.protocol.HttpContext;
+
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.List;
 
 public class PhotoListFragment extends Fragment {
@@ -97,6 +108,41 @@ public class PhotoListFragment extends Fragment {
 
         public void setPhotos(List<Photo> photos) {
             mPhotos = photos;
+        }
+    }
+
+    private class HttpRequestTask extends AsyncTask<Void, Void, String> {
+        protected String getASCIIContentFromEntity(HttpEntity entity) throws IllegalStateException, IOException {
+            InputStream in = entity.getContent();
+
+            StringBuffer out = new StringBuffer();
+            int n = 1;
+            while (n > 0) {
+                byte[] b = new byte[4096];
+                n = in.read(b);
+                if (n > 0)
+                    out.append(new String(b, 0, n));
+            }
+
+            return out.toString();
+        }
+
+        @Override
+        protected String doInBackground(Void... params) {
+            final String url = "https://node-quick-gallery-mkaichen.c9.io/images";
+            String img = null;
+
+            HttpClient httpClient = new DefaultHttpClient();
+            HttpContext localContext = new BasicHttpContext();
+            HttpGet httpGet = new HttpGet(url);
+            try {
+                HttpResponse response = httpClient.execute(httpGet, localContext);
+                HttpEntity entity = response.getEntity();
+                img = getASCIIContentFromEntity(entity);
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+            return img;
         }
     }
 
@@ -180,22 +226,31 @@ public class PhotoListFragment extends Fragment {
     @TargetApi(Build.VERSION_CODES.HONEYCOMB)
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
+        boolean itemSelected = true;
         switch (item.getItemId()) {
+            case R.id.menu_item_refresh:
+                Toast.makeText(getActivity(), "Refreshing", Toast.LENGTH_SHORT).show();
+
+                String data = null;
+                // get RESTful from here
+                new HttpRequestTask().execute();
+
+                break;
             case R.id.menu_item_new_photo:
                 Photo photo = new Photo();
                 PhotoCenter.get(getActivity()).addPhoto(photo);
                 updateUI();
                 mCallbacks.onPhotoSelected(photo);
-                return true;
+                break;
             case R.id.menu_item_show_subtitle:
-                mSubtitleVisible = !mSubtitleVisible;
+                mSubtitleVisible = !mSubtitleVisible; // toggle
                 getActivity().invalidateOptionsMenu();
-
-                updateSubtitle();
-                return true;
+                updateSubtitle(); // subtitle availability is checked then turned on/off
+                break;
             default:
-                return super.onOptionsItemSelected(item);
+                itemSelected = super.onOptionsItemSelected(item);
         }
+        return itemSelected;
     }
 
     private void updateSubtitle() {
