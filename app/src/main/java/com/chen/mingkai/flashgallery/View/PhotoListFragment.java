@@ -2,6 +2,8 @@ package com.chen.mingkai.flashgallery.View;
 
 import android.annotation.TargetApi;
 import android.app.Activity;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Bundle;
@@ -9,6 +11,8 @@ import android.support.v4.app.Fragment;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
+import android.util.Base64;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuInflater;
@@ -31,8 +35,15 @@ import org.apache.http.impl.client.DefaultHttpClient;
 import org.apache.http.protocol.BasicHttpContext;
 import org.apache.http.protocol.HttpContext;
 
+import java.io.BufferedOutputStream;
+import java.io.ByteArrayInputStream;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
+import java.util.IllegalFormatException;
 import java.util.List;
 
 public class PhotoListFragment extends Fragment {
@@ -144,6 +155,52 @@ public class PhotoListFragment extends Fragment {
             }
             return img;
         }
+
+        @TargetApi(Build.VERSION_CODES.ICE_CREAM_SANDWICH)
+        protected void ConvertToImage(String image, File file) {
+            String imageType = image.substring(image.indexOf("/")+1, image.indexOf(";")); // bytes following data:image\/???;base64,
+            String imageDataBytes = image.substring(image.indexOf(",")+1); // bytes following data:image\/???;base64,
+
+            try{
+                InputStream stream = new ByteArrayInputStream(Base64.decode(imageDataBytes.getBytes(), Base64.DEFAULT));
+                Bitmap bitmap = BitmapFactory.decodeStream(stream);
+
+                Bitmap.CompressFormat format = null;
+                switch(imageType) {
+                    case "jpeg":
+                        format = Bitmap.CompressFormat.JPEG;
+                        break;
+                    case "png":
+                        format = Bitmap.CompressFormat.PNG;
+                        break;
+                    case "webp":
+                        format = Bitmap.CompressFormat.WEBP;
+                        break;
+                    default:
+                        throw new Exception("received data is not a valid image type");
+                }
+                OutputStream ostream = new BufferedOutputStream(new FileOutputStream(file));
+
+                bitmap.compress(format, 100, ostream);
+
+                ostream.close();
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+
+        @Override
+        protected void onPostExecute(String img) {
+            // generate a new photo object
+            Photo photo = new Photo();
+            PhotoCenter photoCenter = PhotoCenter.get(getActivity());
+            photoCenter.addPhoto(photo);
+
+            ConvertToImage(img, photoCenter.getPhotoFile(photo));
+
+            // update list
+            updateUI();
+        }
     }
 
     @Override
@@ -230,11 +287,8 @@ public class PhotoListFragment extends Fragment {
         switch (item.getItemId()) {
             case R.id.menu_item_refresh:
                 Toast.makeText(getActivity(), "Refreshing", Toast.LENGTH_SHORT).show();
-
-                String data = null;
                 // get RESTful from here
                 new HttpRequestTask().execute();
-
                 break;
             case R.id.menu_item_new_photo:
                 Photo photo = new Photo();
